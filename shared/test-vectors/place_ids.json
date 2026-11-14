@@ -1,0 +1,101 @@
+{
+  "_note": "Shared by backend (pytest) and frontend (vitest). Change only deliberately: both implementations must agree.",
+  "valid": [
+    {
+      "geo": "FC98J327K4",
+      "seq": "56LM",
+      "id": "PP1FC98J327K456LMC",
+      "display": "PP1-FC98J327K4-56LM-C"
+    },
+    {
+      "geo": "39J49LL8T4",
+      "seq": "7P3K",
+      "id": "PP139J49LL8T47P3K7",
+      "display": "PP1-39J49LL8T4-7P3K-7"
+    },
+    {
+      "geo": "FFFFFFFFFF",
+      "seq": "FFFF",
+      "id": "PP1FFFFFFFFFFFFFFF",
+      "display": "PP1-FFFFFFFFFF-FFFF-F"
+    },
+    {
+      "geo": "TTTTTTTTTT",
+      "seq": "TTTT",
+      "id": "PP1TTTTTTTTTTTTTTP",
+      "display": "PP1-TTTTTTTTTT-TTTT-P"
+    },
+    {
+      "geo": "8J2K9C5L7M",
+      "seq": "C3F5",
+      "id": "PP18J2K9C5L7MC3F53",
+      "display": "PP1-8J2K9C5L7M-C3F5-3"
+    },
+    {
+      "geo": "J3K4L9M2T8",
+      "seq": "4MT8",
+      "id": "PP1J3K4L9M2T84MT8F",
+      "display": "PP1-J3K4L9M2T8-4MT8-F"
+    },
+    {
+      "geo": "C9F3J7K4L2",
+      "seq": "J62F",
+      "id": "PP1C9F3J7K4L2J62F6",
+      "display": "PP1-C9F3J7K4L2-J62F-6"
+    },
+    {
+      "geo": "K6L2M8T3F9",
+      "seq": "58LC",
+      "id": "PP1K6L2M8T3F958LC6",
+      "display": "PP1-K6L2M8T3F9-58LC-6"
+    },
+    {
+      "geo": "M4T9F2J6K8",
+      "seq": "K7P9",
+      "id": "PP1M4T9F2J6K8K7P9F",
+      "display": "PP1-M4T9F2J6K8-K7P9-F"
+    },
+    {
+      "geo": "L8C3F5J2M4",
+      "seq": "9F3J",
+      "id": "PP1L8C3F5J2M49F3JT",
+      "display": "PP1-L8C3F5J2M4-9F3J-T"
+    }
+  ],
+  "invalid": [
+    {
+      "input": "",
+      "reason": "incomplete"
+    },
+    {
+      "input": "PP1-FC98",
+      "reason": "incomplete"
+    },
+    {
+      "input": "XX1FC98J327K456LMC",
+      "reason": "prefix"
+    },
+    {
+      "input": "PP1FC98J327K456LMCF",
+      "reason": "prefix"
+    },
+    {
+      "input": "PP1OOOOOOOOOOOOOOO",
+      "reason": "characters"
+    },
+    {
+      "input": "PP1FC98J327K456LMF",
+      "reason": "checksum"
+    }
+  ],
+  "normalize": [
+    {
+      "input": "pp1 fc98j327k4 56lm c",
+      "canonical": "PP1FC98J327K456LMC"
+    },
+    {
+      "input": " PP1-39J49LL8T4-7P3K-7 ",
+      "canonical": "PP139J49LL8T47P3K7"
+    }
+  ]
+}
