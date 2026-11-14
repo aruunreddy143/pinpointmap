@@ -20,7 +20,10 @@ backend/
 
 ## Milestones (in order)
 
-> Status: M0, M1 and M2 are done and tested. Next: M3 (auth and permissions).
+> Status: M0, M1, M2 and M3 are done and tested. Next: M4 (places and verification).
+>
+> M3 notes: auth endpoints are `/auth/otp/{request,verify,signup}`, `/auth/staff/{login,totp}`, `/auth/refresh`, `/auth/logout`, `/auth/me`, `/auth/password/{forgot,reset}`, `/auth/invites/{token}` (+ `/accept`), and `POST /admin/invites`.
+> Known limits to revisit: per-IP rate limits are in-process (single instance only); authenticator codes are not yet replay-protected within their 30-second window; SMS/email providers are placeholders (console/outbox) until you choose them; `Actor.jurisdiction_ids` returns granted areas only, and M4 must expand state and district grants to their sub-areas.
 
 ### M0. Scaffold (small)
 - `docker compose up db` (PostGIS), settings from env, app factory, `/health`, Alembic wired, Ruff config, pytest fixtures (real DB, per-test transaction rollback).
@@ -39,7 +42,7 @@ Tables: `jurisdiction`, `app_user` (kind: staff | viewer; email and/or mobile ha
 - Postgres check constraints for Phase 1 shape (house/building need a point and no parent; unit needs a building parent).
 - Done when: migrations apply and roll back; a test proves `UPDATE`/`DELETE` on `audit_event` is refused.
 
-### M3. Auth and permissions
+### M3. Auth and permissions (DONE: 140 tests across 6 files)
 - `core/permissions.py`: the role to permission map (mirror of `frontend/src/lib/permissions.ts`; one test compares them).
 - Staff: password (argon2) then authenticator code; lockout after 5 failures; unknown email and wrong password give the same answer; refresh-token rotation. Invites (single-use, expiring), password reset (same response whether or not the account exists).
 - Viewer: OTP by SMS or email (`providers/` interface; console provider in dev), 5-minute expiry, 5 tries, 3 requests per identifier, per-IP limit; identifier stored hashed.

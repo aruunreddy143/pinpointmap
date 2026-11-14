@@ -11,12 +11,17 @@ from pathlib import Path
 import pytest
 from alembic import command
 from alembic.config import Config
+from fastapi.testclient import TestClient
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
-from app.core.db import make_engine
+from app.core.db import get_session, make_engine
+from app.core.deps import get_notifier
+from app.core.ratelimit import limiter
 from app.core.settings import get_settings
+from app.main import create_app
+from app.providers.notify import OutboxNotifier
 
 ROOT = Path(__file__).parents[1]
 
@@ -60,3 +65,25 @@ def db_session(db_engine) -> Iterator[Session]:
         session.close()
         outer.rollback()
         conn.close()
+
+
+@pytest.fixture(autouse=True)
+def _fresh_rate_limits():
+    limiter.reset()
+    yield
+    limiter.reset()
+
+
+@pytest.fixture
+def outbox() -> OutboxNotifier:
+    return OutboxNotifier()
+
+
+@pytest.fixture
+def client(db_session, outbox) -> Iterator[TestClient]:
+    """The real app, wired to the rolled-back test session and an in-memory outbox instead of SMS/email."""
+    app = create_app()
+    app.dependency_overrides[get_session] = lambda: db_session
+    app.dependency_overrides[get_notifier] = lambda: outbox
+    with TestClient(app) as c:
+        yield c

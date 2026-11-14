@@ -7,15 +7,17 @@ import uuid
 
 from sqlalchemy.orm import Session
 
+from app.core import security
 from app.core.geo import LatLon, point
 from app.domain.digipin import ALPHABET
 from app.domain.place_id import make_id
-from app.models import AppUser, Jurisdiction, Place
+from app.models import AppUser, Jurisdiction, Place, RoleAssignment
 from app.models.enums import (
     JurisdictionLevel,
     LocationSource,
     PlaceStatus,
     PlaceType,
+    Role,
     UserKind,
     Visibility,
 )
@@ -55,6 +57,31 @@ def make_user(session: Session, kind: UserKind = UserKind.STAFF, **kw) -> AppUse
     session.add(user)
     session.flush()
     return user
+
+
+STAFF_PASSWORD = "Passw0rd!xyz"  # noqa: S105 (test value)
+
+
+def make_staff(
+    session: Session,
+    role: Role,
+    jurisdiction: Jurisdiction,
+    *,
+    password: str = STAFF_PASSWORD,
+    **kw,
+) -> tuple[AppUser, str]:
+    """A staff user with a password, an authenticator secret and one role. Returns (user, totp_secret)."""
+    secret = security.new_totp_secret()
+    user = make_user(
+        session,
+        UserKind.STAFF,
+        password_hash=security.hash_password(password),
+        totp_secret=security.encrypt_secret(secret),
+        **kw,
+    )
+    session.add(RoleAssignment(user_id=user.id, role=role, jurisdiction_id=jurisdiction.id))
+    session.flush()
+    return user, secret
 
 
 def make_place(

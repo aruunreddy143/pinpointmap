@@ -4,7 +4,8 @@ from typing import Literal
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-_DEV_SECRET = "dev-only-change-me"  # noqa: S105 (a marker, rejected outside development)
+DEV_SECRET = "dev-only-change-me-this-is-not-a-secret"  # noqa: S105 (a marker, rejected in production)
+_DEV_SECRET = DEV_SECRET
 
 
 class Settings(BaseSettings):
@@ -16,6 +17,17 @@ class Settings(BaseSettings):
     secret_key: str = _DEV_SECRET
     public_base_url: str = "http://localhost:5173"
     cors_origins: list[str] = ["http://localhost:5173"]
+
+    # Sessions and sign-in limits (see .claude/skills/pinpoint-rbac-audit)
+    access_token_minutes: int = 15
+    refresh_token_days: int = 14
+    otp_ttl_seconds: int = 300
+    otp_max_tries: int = 5
+    otp_max_requests: int = 3  # per identifier, per 15 minutes
+    login_max_failures: int = 5
+    lockout_minutes: int = 15
+    invite_days: int = 7
+    reset_minutes: int = 30
 
     @field_validator("secret_key")
     @classmethod
