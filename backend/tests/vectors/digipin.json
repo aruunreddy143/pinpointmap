@@ -1,0 +1,12 @@
+{
+  "_note": "DIGIPIN vectors. Only the Dak Bhawan example comes from published sources; add the official document's vectors before launch.",
+  "encode": [
+    {
+      "name": "Dak Bhawan, New Delhi",
+      "lat": 28.622788,
+      "lon": 77.213033,
+      "code": "39J49LL8T4",
+      "source": "published example (secondary sources)"
+    }
+  ]
+}
