@@ -43,7 +43,7 @@ export function ReviewPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-5 p-4 md:p-7 lg:h-full">
+    <div className="mx-auto flex max-w-6xl flex-col gap-5 p-4 md:p-7">
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex-1">
           <h1 className="m-0 text-[22px] font-bold">Review queue</h1>
@@ -84,7 +84,7 @@ export function ReviewPage() {
               </div>
             </div>
             <div className="grid flex-1 xl:grid-cols-[minmax(0,1fr)_300px]">
-              <div className="relative min-h-[260px]">
+              <div className="relative h-[300px] xl:h-auto xl:min-h-[320px]">
                 <MapView key={current.place.id} ariaLabel="Submitted pin" center={current.place.geo} zoom={17} markers={[{ id: current.place.id, geo: current.place.geo, status: current.place.status, label: current.place.name }]} selectedId={current.place.id} className="absolute inset-0" />
               </div>
               <div className="flex flex-col gap-3.5 border-t border-border p-5 xl:border-l xl:border-t-0">
