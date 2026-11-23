@@ -4,7 +4,7 @@ public allow-list below. Forgetting a permission check fails this test."""
 import pytest
 from fastapi.routing import APIRoute
 
-from app.api import admin, auth
+from app.api import admin, audit, auth, places, public
 from app.main import create_app
 
 PUBLIC = {
@@ -20,15 +20,20 @@ PUBLIC = {
     ("POST", "/auth/password/reset"),
     ("GET", "/auth/invites/{token}"),
     ("POST", "/auth/invites/{token}/accept"),
+    # Public by design (rate limited; they show only what a place's visibility allows).
+    ("GET", "/p/{code}"),
+    ("GET", "/public/places"),
+    ("GET", "/public/places/{ref}"),
 }
+
+
+ROUTERS = (auth.router, admin.router, places.router, places.review_router, audit.router, public.router)
 
 
 def _all_routes() -> list[APIRoute]:
     app = create_app()
     own = [r for r in app.routes if isinstance(r, APIRoute)]
-    return own + [
-        r for router in (auth.router, admin.router) for r in router.routes if isinstance(r, APIRoute)
-    ]
+    return own + [r for router in ROUTERS for r in router.routes if isinstance(r, APIRoute)]
 
 
 def _guard(dependant) -> bool:
@@ -69,4 +74,4 @@ def test_every_guarded_route_refuses_an_anonymous_caller(client):
             resp = client.request(m, path, json={})
             assert resp.status_code == 401, f"{m} {r.path} answered {resp.status_code} to an anonymous caller"
             checked += 1
-    assert checked >= 2  # /auth/me and /admin/invites today
+    assert checked >= 15

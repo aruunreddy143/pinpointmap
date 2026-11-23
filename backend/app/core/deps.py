@@ -25,12 +25,14 @@ from app.core.settings import get_settings
 from app.models import AppUser, RoleAssignment
 from app.models.enums import Role, UserKind
 from app.providers.notify import ConsoleNotifier, Notifier, UnconfiguredNotifier
+from app.services.access import Access
 from app.services.audit import ClientInfo
 
 _bearer = HTTPBearer(auto_error=False)
 
 __all__ = [
     "Actor",
+    "get_optional_actor",
     "get_client",
     "get_notifier",
     "get_session",
@@ -70,6 +72,16 @@ class Actor:
     def is_super_admin(self) -> bool:
         return any(g.role == Role.SUPER_ADMIN.value for g in self.grants)
 
+    @property
+    def access(self) -> Access:
+        """The framework-free view of this actor, which is what services receive."""
+        return Access(
+            user_id=self.user.id,
+            is_staff=self.is_staff,
+            name=self.user.name,
+            grants=tuple((g.role, g.jurisdiction_id) for g in self.grants),
+        )
+
 
 def _valid_ip(host: str | None) -> str | None:
     """Only a real IP address can be stored in the audit log's inet column."""
@@ -107,6 +119,20 @@ def get_current_actor(
         raise AuthenticationFailed("Sign in to continue.")
     rows = session.scalars(select(RoleAssignment).where(RoleAssignment.user_id == user.id)).all()
     return Actor(user=user, grants=[Grant(r.role.value, r.jurisdiction_id) for r in rows])
+
+
+def get_optional_actor(
+    creds: HTTPAuthorizationCredentials | None = Depends(_bearer),
+    session: Session = Depends(get_session),
+) -> Actor | None:
+    """For public routes that show more to a signed-in caller (the scan resolver). A missing or bad
+    token simply means "anonymous"; it never errors."""
+    if creds is None:
+        return None
+    try:
+        return get_current_actor(creds, session)
+    except AuthenticationFailed:
+        return None
 
 
 def require_authenticated(actor: Actor = Depends(get_current_actor)) -> Actor:

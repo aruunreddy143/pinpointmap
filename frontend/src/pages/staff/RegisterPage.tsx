@@ -9,7 +9,7 @@ import { can } from '@/lib/permissions'
 import { formatDisplay } from '@/lib/placeId'
 import type { LatLon, Place } from '@/lib/types'
 import { parseUnitLabels } from '@/lib/units'
-import { createAndSubmit, findNearby } from '@/mocks/api'
+import { createAndSubmit, findNearby } from '@/lib/api'
 
 const STEPS = ['Location', 'Details', 'Visibility', 'Review'] as const
 const DUPLICATE_RADIUS_M = 15
@@ -18,7 +18,7 @@ const MAX_GOOD_ACCURACY_M = 20
 type Nearby = Place & { distanceM: number }
 
 export function RegisterPage() {
-  const { role, userName } = useSession()
+  const { role } = useSession()
   const toast = useToast()
   const nav = useNavigate()
   const [step, setStep] = useState(0)
@@ -58,10 +58,24 @@ export function RegisterPage() {
 
   const submit = async () => {
     setSaving(true)
-    const place = await createAndSubmit({ type, name: name.trim(), geo, accuracyM: accuracy, address: address.trim(), landmark: landmark.trim(), unitLabels: units.labels }, userName)
-    setSaving(false)
-    toast(`Submitted. ID ${place.publicId ? formatDisplay(place.publicId) : ''} issued, waiting for a verifier.`)
-    nav(`/staff/places/${place.id}`)
+    try {
+      const place = await createAndSubmit({
+        type,
+        name: name.trim(),
+        geo,
+        accuracyM: accuracy,
+        address: address.trim(),
+        landmark: landmark.trim(),
+        unitLabels: units.labels,
+        differentPlaceReason: nearby.length > 0 ? reason.trim() : undefined,
+      })
+      toast(`Submitted. ID ${place.publicId ? formatDisplay(place.publicId) : ''} issued, waiting for a verifier.`)
+      nav(`/staff/places/${place.id}`)
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Could not submit. Please try again.', 'bad')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (

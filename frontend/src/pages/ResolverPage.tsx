@@ -6,13 +6,13 @@ import { PublicPlaceView } from '@/components/PublicPlaceView'
 import { Button, Card, Skeleton } from '@/components/ui'
 import { isStaff } from '@/lib/permissions'
 import { useAsync } from '@/lib/useAsync'
-import { resolve } from '@/mocks/api'
+import { resolve } from '@/lib/api'
 
 /** The scan target (/p/:id). What it shows depends on who scans (see pinpoint-qr-label skill). */
 export function ResolverPage() {
   const { id = '' } = useParams()
   const { role } = useSession()
-  const res = useAsync(() => resolve(id, role), [id, role])
+  const res = useAsync(() => resolve(id), [id, role])
   const r = res.data
 
   return (
@@ -39,6 +39,11 @@ export function ResolverPage() {
             </div>
           </Card>
           {!role && <Link to="/"><Button variant="primary" size="lg" className="w-full">Staff sign in</Button></Link>}
+        </>
+      ) : r?.kind === 'tombstone' ? (
+        <>
+          <Notice icon={FileQuestion} tone="grey" title={`This place was ${r.status === 'merged' ? 'merged' : r.status === 'split' ? 'split' : 'retired'}`} text="The code is no longer in use for this place." />
+          {r.successorIds.map((sid) => <Link key={sid} to={`/p/${sid}`}><Button size="lg" className="w-full">Open the current place</Button></Link>)}
         </>
       ) : r?.kind === 'public' ? (
         <PublicPlaceView place={r.place} units={r.units} canReport={role === 'viewer'} />

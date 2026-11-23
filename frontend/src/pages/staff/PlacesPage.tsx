@@ -7,7 +7,7 @@ import { formatDisplay } from '@/lib/placeId'
 import { can } from '@/lib/permissions'
 import type { Place } from '@/lib/types'
 import { useAsync } from '@/lib/useAsync'
-import { listPlaces } from '@/mocks/api'
+import { listPlaces } from '@/lib/api'
 
 type Filter = 'all' | 'active' | 'pending_verification'
 

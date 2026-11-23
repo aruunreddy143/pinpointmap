@@ -6,10 +6,10 @@ import { Button, Card, EmptyState, Field, InlineError, Pill, Skeleton, inputClas
 import { can, ROLE_LABEL } from '@/lib/permissions'
 import type { Role } from '@/lib/types'
 import { useAsync } from '@/lib/useAsync'
-import { inviteStaff, listStaff, type StaffRow } from '@/mocks/auth'
+import { inviteStaff, listJurisdictions, listStaff, type StaffRow } from '@/lib/api'
 
 const ASSIGNABLE: Role[] = ['registrar', 'verifier', 'printer', 'auditor', 'admin']
-const DISTRICTS = ['Bengaluru Urban', 'Mysuru', 'Mangaluru']
+
 
 export function UsersPage() {
   const { role } = useSession()
@@ -17,7 +17,8 @@ export function UsersPage() {
   const staff = useAsync(listStaff, [])
   const [email, setEmail] = useState('')
   const [newRole, setNewRole] = useState<Role>('registrar')
-  const [district, setDistrict] = useState(DISTRICTS[0])
+  const areas = useAsync(listJurisdictions, [])
+  const [district, setDistrict] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [last, setLast] = useState<StaffRow | null>(null)
@@ -32,7 +33,7 @@ export function UsersPage() {
     e.preventDefault()
     setBusy(true)
     setError(null)
-    const r = await inviteStaff(email, newRole, district)
+    const r = await inviteStaff(email, newRole, district || (areas.data?.[0]?.id ?? ''))
     setBusy(false)
     if ('error' in r) return setError(r.error)
     setLast(r)
@@ -64,7 +65,7 @@ export function UsersPage() {
             <select id="u-role" value={newRole} onChange={(e) => setNewRole(e.target.value as Role)} className={inputClass}>{ASSIGNABLE.map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}</select>
           </Field>
           <Field label="District" htmlFor="u-dist">
-            <select id="u-dist" value={district} onChange={(e) => setDistrict(e.target.value)} className={inputClass}>{DISTRICTS.map((d) => <option key={d}>{d}</option>)}</select>
+            <select id="u-dist" value={district || (areas.data?.[0]?.id ?? '')} onChange={(e) => setDistrict(e.target.value)} className={inputClass}>{areas.data?.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}</select>
           </Field>
           <div className="md:pt-[22px]"><Button type="submit" variant="primary" loading={busy} disabled={!email.includes('@')}>Send invite</Button></div>
         </form>

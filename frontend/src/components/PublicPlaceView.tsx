@@ -7,7 +7,7 @@ import { useToast } from './toast'
 import { Button, Card, Pill, inputClass } from './ui'
 import { formatDisplay } from '@/lib/placeId'
 import type { Place } from '@/lib/types'
-import { submitCorrection } from '@/mocks/api'
+import { submitCorrection } from '@/lib/api'
 
 /** Read-only view of a public place. No edit, print, history or status-change controls exist here. */
 export function PublicPlaceView({ place, units, canReport, backTo }: { place: Place; units: Place[]; canReport: boolean; backTo?: string }) {

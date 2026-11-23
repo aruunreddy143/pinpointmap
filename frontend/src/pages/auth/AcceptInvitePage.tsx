@@ -6,14 +6,13 @@ import { useSession } from '@/app/providers'
 import { Button, Field, InlineError, Skeleton, inputClass } from '@/components/ui'
 import { ROLE_LABEL } from '@/lib/permissions'
 import { useAsync } from '@/lib/useAsync'
-import { acceptInvite, DEMO_TOTP, getInvite, passwordProblem } from '@/mocks/auth'
-import { AuthShell, CodeInput, DemoHint } from './AuthShell'
-
-const MOCK_SECRET = 'JBSWY3DPEHPK3PXP'
+import { acceptInvite, getInvite, passwordProblem } from '@/lib/authApi'
+import { ApiError } from '@/lib/http'
+import { AuthShell, CodeInput } from './AuthShell'
 
 export function AcceptInvitePage() {
   const { token = '' } = useParams()
-  const { signIn } = useSession()
+  const { startSession } = useSession()
   const nav = useNavigate()
   const invite = useAsync(() => getInvite(token), [token])
   const [name, setName] = useState('')
@@ -23,12 +22,11 @@ export function AcceptInvitePage() {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
-  const email = invite.data?.email
+  const totpUri = invite.data?.totp_uri
   useEffect(() => {
-    if (!email) return
-    const uri = `otpauth://totp/PINPOINT:${encodeURIComponent(email)}?secret=${MOCK_SECRET}&issuer=PINPOINT`
-    QRCode.toString(uri, { type: 'svg', margin: 0 }).then(setQr)
-  }, [email])
+    if (!totpUri) return
+    QRCode.toString(totpUri, { type: 'svg', margin: 0 }).then(setQr)
+  }, [totpUri])
 
   if (invite.loading && !invite.data) {
     return <AuthShell title="Accept your invite"><Skeleton className="h-40" /></AuthShell>
@@ -48,11 +46,14 @@ export function AcceptInvitePage() {
     e.preventDefault()
     setBusy(true)
     setError(null)
-    const r = await acceptInvite(token, name, password, code)
-    setBusy(false)
-    if (!r.ok) return setError(r.error)
-    signIn(r.role, r.name)
-    nav('/staff/map')
+    try {
+      startSession(await acceptInvite(token, name, password, code))
+      nav('/staff/map')
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -68,11 +69,10 @@ export function AcceptInvitePage() {
           <p className="m-0 text-[13px] leading-relaxed text-muted">Scan this code with an authenticator app (Google Authenticator, Microsoft Authenticator, Authy), then enter the 6-digit code it shows.</p>
           <div className="flex items-center gap-4">
             <div role="img" aria-label="Authenticator setup QR code" className="size-32 shrink-0 rounded-lg bg-white p-2 [&>svg]:size-full" dangerouslySetInnerHTML={{ __html: qr }} />
-            <div className="min-w-0 text-xs text-muted"><LinkIcon size={13} className="mb-1 inline" aria-hidden /> Can't scan? Enter this key:<div className="mt-1 break-all font-mono text-[12.5px] text-text">{MOCK_SECRET}</div></div>
+            <div className="min-w-0 text-xs text-muted"><LinkIcon size={13} className="mb-1 inline" aria-hidden /> Can't scan? Enter this key:<div className="mt-1 break-all font-mono text-[12.5px] text-text">{invite.data.totp_secret}</div></div>
           </div>
           <Field label="Code from the app" htmlFor="inv-code"><CodeInput id="inv-code" value={code} onChange={(v) => { setCode(v); setError(null) }} invalid={!!error} /></Field>
         </div>
-        <DemoHint>the code is {DEMO_TOTP}.</DemoHint>
         {error && <InlineError title="Could not finish setup" text={error} />}
         <Button type="submit" variant="primary" size="lg" disabled={!ready} loading={busy}>Create account and sign in</Button>
       </form>

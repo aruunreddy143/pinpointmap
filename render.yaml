@@ -1,0 +1,20 @@
+# Render Blueprint: backend web service (free). Database lives on Neon (see docs/deploy.md).
+services:
+  - type: web
+    name: pinpoint-api
+    runtime: docker
+    plan: free
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /docs
+    envVars:
+      - key: PINPOINT_ENVIRONMENT
+        value: production
+      - key: PINPOINT_SECRET_KEY
+        generateValue: true
+      - key: PINPOINT_DATABASE_URL
+        sync: false   # postgresql+psycopg://USER:PASS@HOST/DB?sslmode=require
+      - key: PINPOINT_PUBLIC_BASE_URL
+        sync: false   # your Cloudflare Pages URL
+      - key: PINPOINT_CORS_ORIGINS
+        sync: false   # JSON list, e.g. ["https://pinpoint.pages.dev"]

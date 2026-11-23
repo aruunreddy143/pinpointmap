@@ -4,7 +4,7 @@ import { Eye, History, ListChecks, ListTree, LogOut, MapPin, Map as MapIcon, Moo
 import { useSession, useTheme } from './providers'
 import { can, isStaff, ROLE_LABEL } from '@/lib/permissions'
 import type { Permission, Role } from '@/lib/types'
-import { listReview } from '@/mocks/api'
+import { listReview } from '@/lib/api'
 import { Pill, cx } from '@/components/ui'
 
 export function Logo() {
@@ -53,7 +53,8 @@ function UserMenu({ showRole = true }: { showRole?: boolean }) {
 
 /** Renders children only when the signed-in role passes; otherwise redirects to sign-in. */
 export function RequireRole({ allow }: { allow: 'staff' | 'viewer' }) {
-  const { role } = useSession()
+  const { role, ready } = useSession()
+  if (!ready) return <div className="min-h-screen bg-bg" aria-busy="true" />
   if (!role) return <Navigate to="/" replace />
   if (allow === 'staff' && !isStaff(role)) return <Navigate to="/app" replace />
   if (allow === 'viewer' && isStaff(role)) return <Navigate to="/staff/map" replace />

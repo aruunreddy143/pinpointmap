@@ -87,3 +87,12 @@ def client(db_session, outbox) -> Iterator[TestClient]:
     app.dependency_overrides[get_notifier] = lambda: outbox
     with TestClient(app) as c:
         yield c
+
+
+@pytest.fixture
+def world(db_session):
+    """Two districts under one state, and staff in each. The verifier holds a STATE grant, which must
+    cover both districts (sub-area expansion)."""
+    from tests.world import build_world
+
+    return build_world(db_session)

@@ -9,7 +9,7 @@ import { Button, Pill, Skeleton, StatusPill, inputClass } from '@/components/ui'
 import { can } from '@/lib/permissions'
 import { formatDisplay } from '@/lib/placeId'
 import { useAsync } from '@/lib/useAsync'
-import { listPlaces, listUnits } from '@/mocks/api'
+import { listPlaces, listUnits } from '@/lib/api'
 
 export function MapPage() {
   const { role } = useSession()
@@ -65,7 +65,7 @@ export function MapPage() {
             </div>
             <dl className="m-0 grid grid-cols-2 gap-3.5 border-b border-border p-5">
               <Fact k="Units" v={units.loading ? '…' : String(units.data?.length ?? 0)} />
-              <Fact k="Pin accuracy" v={`± ${place.accuracyM} m · GPS`} />
+              <Fact k="Pin accuracy" v={`± ${place.accuracyM ?? "?"} m · GPS`} />
               <Fact k="Visibility" v={place.visibility === 'private' ? 'Private' : 'Public'} icon={place.visibility === 'private'} />
               <Fact k="Verified" v={place.verifiedAt ?? 'Not yet'} />
             </dl>

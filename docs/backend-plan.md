@@ -20,7 +20,7 @@ backend/
 
 ## Milestones (in order)
 
-> Status: M0, M1, M2 and M3 are done and tested. Next: M4 (places and verification).
+> Status: M0 to M6 are done and tested (API mapping in `docs/api-contract.md`). Not built yet: merge, split, retire, bulk import (M4), the staff view of corrections, and rate-limit counters outside the process. Next: M7 (contract and frontend switch-over).
 >
 > M3 notes: auth endpoints are `/auth/otp/{request,verify,signup}`, `/auth/staff/{login,totp}`, `/auth/refresh`, `/auth/logout`, `/auth/me`, `/auth/password/{forgot,reset}`, `/auth/invites/{token}` (+ `/accept`), and `POST /admin/invites`.
 > Known limits to revisit: per-IP rate limits are in-process (single instance only); authenticator codes are not yet replay-protected within their 30-second window; SMS/email providers are placeholders (console/outbox) until you choose them; `Actor.jurisdiction_ids` returns granted areas only, and M4 must expand state and district grants to their sub-areas.

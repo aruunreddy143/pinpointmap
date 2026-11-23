@@ -1,5 +1,5 @@
 import { Link, Navigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Printer } from 'lucide-react'
+import { ArrowLeft, Download, Printer } from 'lucide-react'
 import { useSession } from '@/app/providers'
 import { Barcode, QrCode } from '@/components/codes'
 import { useToast } from '@/components/toast'
@@ -7,7 +7,7 @@ import { Button, Skeleton } from '@/components/ui'
 import { can } from '@/lib/permissions'
 import { formatDisplay } from '@/lib/placeId'
 import { useAsync } from '@/lib/useAsync'
-import { getPlace } from '@/mocks/api'
+import { downloadLabel, getPlace } from '@/lib/api'
 
 export function LabelPage() {
   const { id = '' } = useParams()
@@ -22,6 +22,15 @@ export function LabelPage() {
       <div className="flex items-center gap-3 print:hidden">
         <Link to={`/staff/places/${id}`}><Button variant="ghost" icon={ArrowLeft}>Back</Button></Link>
         <div className="flex-1" />
+        <Button icon={Download} onClick={async () => {
+          try {
+            const url = URL.createObjectURL(await downloadLabel(id, 'pdf'))
+            window.open(url, '_blank')
+            setTimeout(() => URL.revokeObjectURL(url), 60_000)
+          } catch (e) {
+            toast(e instanceof Error ? e.message : 'Could not get the label.', 'bad')
+          }
+        }}>Label PDF</Button>
         <Button variant="primary" icon={Printer} onClick={() => { window.print(); toast('Label sent to the printer') }}>Print</Button>
       </div>
       {place.loading || !p || !p.publicId ? (

@@ -8,7 +8,7 @@ import { Button, Card, EmptyState, InlineError, Pill, Skeleton, StatusPill, Visi
 import { can } from '@/lib/permissions'
 import { formatDisplay } from '@/lib/placeId'
 import { useAsync } from '@/lib/useAsync'
-import { getPlace, listHistory, listUnits, setVisibility } from '@/mocks/api'
+import { getPlace, listHistory, listUnits, setVisibility } from '@/lib/api'
 
 const TONE = { ok: 'bg-ok', accent: 'bg-accent', warn: 'bg-warn', muted: 'bg-muted' }
 
@@ -20,6 +20,8 @@ export function PlaceDetailPage() {
   const units = useAsync(() => listUnits(id), [id])
   const history = useAsync(() => listHistory(id), [id])
   const [busy, setBusy] = useState(false)
+  // null = not asking; a string = asking who agreed to make the place public (consent is recorded).
+  const [consentAsk, setConsentAsk] = useState<string | null>(null)
 
   if (place.loading && !place.data) {
     return (
@@ -42,11 +44,23 @@ export function PlaceDetailPage() {
   const canEdit = !!role && can(role, 'place:update')
 
   const makePublic = async () => {
+    const goPublic = p.visibility !== 'public'
+    if (goPublic && consentAsk === null) {
+      setConsentAsk('')
+      return
+    }
     setBusy(true)
-    await setVisibility(p.id, p.visibility === 'public' ? 'private' : 'public')
-    setBusy(false)
-    place.reload()
-    toast(p.visibility === 'public' ? 'Place is now private' : 'Place is now public')
+    try {
+      await setVisibility(p.id, goPublic ? 'public' : 'private', goPublic ? consentAsk?.trim() : undefined)
+      setConsentAsk(null)
+      place.reload()
+      history.reload()
+      toast(goPublic ? 'Place is now public' : 'Place is now private')
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Could not change visibility.', 'bad')
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -62,11 +76,20 @@ export function PlaceDetailPage() {
           <div className="flex-1" />
           {canEdit && <Button disabled title="Editing arrives with the backend">Edit</Button>}
           {canEdit && p.status === 'active' && (
-            <Button loading={busy} onClick={makePublic}>
-              {p.visibility === 'public' ? 'Make private' : 'Request public'}
+            <Button loading={busy} onClick={makePublic} disabled={consentAsk !== null && consentAsk.trim().length < 2}>
+              {p.visibility === 'public' ? 'Make private' : consentAsk === null ? 'Make public' : 'Confirm public'}
             </Button>
           )}
         </div>
+        {consentAsk !== null && (
+          <div className="mt-3 flex flex-wrap items-end gap-3 rounded-xl border border-border bg-surface-2 p-3.5">
+            <label className="flex min-w-[240px] flex-1 flex-col gap-1 text-xs font-semibold text-muted">
+              Who agreed to make this place public? (recorded as consent; a verifier other than the registrar must do this)
+              <input value={consentAsk} onChange={(e) => setConsentAsk(e.target.value)} className="h-10 rounded-[10px] border border-border bg-surface px-3 text-sm font-normal text-text" placeholder="Owner's name" autoFocus />
+            </label>
+            <Button variant="ghost" onClick={() => setConsentAsk(null)}>Cancel</Button>
+          </div>
+        )}
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[340px_minmax(0,1fr)] xl:grid-cols-[340px_minmax(0,1fr)_300px]">
@@ -89,7 +112,7 @@ export function PlaceDetailPage() {
           {!canPrint && p.status !== 'active' && <p className="m-0 text-[13px] text-muted">Labels can be printed once the place is verified and active.</p>}
           <dl className="m-0 grid grid-cols-2 gap-3.5 border-t border-border pt-3">
             <Fact k="Coordinates" v={`${p.geo.lat.toFixed(6)}, ${p.geo.lon.toFixed(6)}`} mono />
-            <Fact k="Accuracy" v={`± ${p.accuracyM} m · GPS`} />
+            <Fact k="Accuracy" v={`± ${p.accuracyM ?? "?"} m · GPS`} />
             <Fact k="District" v={p.district} />
             <Fact k="PIN code" v={p.postalPin} />
           </dl>

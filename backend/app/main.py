@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from app.api import admin, auth
+from app.api import admin, audit, auth, places, public
 from app.core.errors import AppError
 from app.core.settings import get_settings
 
@@ -34,6 +34,10 @@ def create_app() -> FastAPI:
 
     app.include_router(auth.router)
     app.include_router(admin.router)
+    app.include_router(places.router)
+    app.include_router(places.review_router)
+    app.include_router(audit.router)
+    app.include_router(public.router)
     return app
 
 

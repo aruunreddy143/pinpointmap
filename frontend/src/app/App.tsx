@@ -19,7 +19,8 @@ import { ViewerHome } from '@/pages/viewer/ViewerHome'
 import { ViewerPlacePage } from '@/pages/viewer/ViewerPlacePage'
 
 function Home() {
-  const { role } = useSession()
+  const { role, ready } = useSession()
+  if (!ready) return <div className="min-h-screen bg-bg" aria-busy="true" />
   if (!role) return <LoginPage />
   return <Navigate to={isStaff(role) ? '/staff/map' : '/app'} replace />
 }

@@ -2,7 +2,17 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { SessionProvider } from '@/app/providers'
+import { ApiError } from '@/lib/http'
+import * as authApi from '@/lib/authApi'
 import { UserLoginForm } from './UserLoginForm'
+
+vi.mock('@/lib/authApi', async (orig) => ({ ...(await orig<typeof import('@/lib/authApi')>()), requestCode: vi.fn(), verifyCode: vi.fn(), completeSignup: vi.fn() }))
+
+const session = { access_token: 't', token_type: 'bearer', expires_in: 900, user: { id: '1', name: 'Priya K.', kind: 'viewer' as const, email: null, roles: [] } }
+
+beforeEach(() => {
+  vi.mocked(authApi.requestCode).mockResolvedValue()
+})
 
 const renderForm = () =>
   render(
@@ -42,6 +52,7 @@ describe('UserLoginForm', () => {
   it('signs in an existing account by email and code', async () => {
     const user = userEvent.setup()
     renderForm()
+    vi.mocked(authApi.verifyCode).mockResolvedValue({ status: 'ok', session })
     await user.type(screen.getByLabelText('Mobile number or email'), 'priya@example.com')
     await user.click(screen.getByRole('button', { name: 'Send code' }))
     await user.type(await screen.findByLabelText('Enter the code'), '123456')
@@ -51,6 +62,9 @@ describe('UserLoginForm', () => {
 
   it('shows tries left for a wrong code, and asks a new person for their name', async () => {
     const user = userEvent.setup()
+    vi.mocked(authApi.verifyCode)
+      .mockRejectedValueOnce(new ApiError(401, 'authentication_failed', 'That code is not right. 4 tries left.'))
+      .mockResolvedValueOnce({ status: 'new', signupToken: 'st' })
     renderForm()
     await user.type(screen.getByLabelText('Mobile number or email'), 'fresh.user@example.com')
     await user.click(screen.getByRole('button', { name: 'Send code' }))

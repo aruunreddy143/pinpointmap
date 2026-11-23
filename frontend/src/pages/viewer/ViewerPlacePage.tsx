@@ -3,7 +3,7 @@ import { SearchX } from 'lucide-react'
 import { PublicPlaceView } from '@/components/PublicPlaceView'
 import { Button, EmptyState, InlineError, Skeleton } from '@/components/ui'
 import { useAsync } from '@/lib/useAsync'
-import { getPublicPlace } from '@/mocks/api'
+import { getPublicPlace } from '@/lib/api'
 
 export function ViewerPlacePage() {
   const { id = '' } = useParams()

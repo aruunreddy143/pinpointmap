@@ -7,10 +7,10 @@ import { Button, Card, EmptyState, InlineError, Segmented, Skeleton, cx, inputCl
 import { can } from '@/lib/permissions'
 import type { ReviewItem } from '@/lib/types'
 import { useAsync } from '@/lib/useAsync'
-import { decide, listReview } from '@/mocks/api'
+import { decide, listReview } from '@/lib/api'
 
 export function ReviewPage() {
-  const { role, userName } = useSession()
+  const { role } = useSession()
   const toast = useToast()
   const [kind, setKind] = useState<ReviewItem['kind']>('new')
   const queue = useAsync(() => listReview(kind), [kind])
@@ -31,7 +31,7 @@ export function ReviewPage() {
     if (!current) return
     setBusy(true)
     setError(null)
-    const err = await decide(current.placeId, decision, reason, userName)
+    const err = await decide(current.placeId, decision, reason)
     setBusy(false)
     if (err) {
       setError(err)
@@ -67,7 +67,7 @@ export function ReviewPage() {
                   <button type="button" onClick={() => { setSelectedId(i.id); setError(null); setReason('') }} aria-pressed={i.id === current?.id} className={cx('flex w-full flex-col gap-1 rounded-xl border p-3 text-left transition-colors', i.id === current?.id ? 'border-accent bg-accent-soft' : 'border-transparent hover:bg-surface-2')}>
                     <span className="flex items-center gap-2"><span className="flex-1 font-semibold">{i.place.name}</span><span className="text-xs text-muted">{i.ageLabel}</span></span>
                     <span className="text-[12.5px] text-muted">{i.place.type === 'building' ? 'Apartment building' : 'House'} · {i.place.locality} · by {i.submittedBy}</span>
-                    <span className={cx('text-xs font-semibold', i.duplicateSuspect ? 'text-warn' : 'text-muted')}>{i.duplicateSuspect ? `Possible duplicate: ${i.nearestM} m` : `Nearest place ${i.nearestM} m`}</span>
+                    <span className={cx('text-xs font-semibold', i.duplicateSuspect ? 'text-warn' : 'text-muted')}>{i.duplicateSuspect ? `Possible duplicate: ${i.nearestM} m` : i.nearestM === null ? "No other place nearby" : `Nearest place ${i.nearestM} m`}</span>
                   </button>
                 </li>
               ))}

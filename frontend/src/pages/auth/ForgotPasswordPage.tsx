@@ -1,21 +1,29 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { MailCheck } from 'lucide-react'
-import { Button, Field, inputClass } from '@/components/ui'
-import { requestPasswordReset } from '@/mocks/auth'
+import { Button, Field, InlineError, inputClass } from '@/components/ui'
+import { requestPasswordReset } from '@/lib/authApi'
+import { ApiError } from '@/lib/http'
 import { AuthShell } from './AuthShell'
 
 export function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
   const [busy, setBusy] = useState(false)
   const [sent, setSent] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setBusy(true)
-    await requestPasswordReset(email)
-    setBusy(false)
-    setSent(true)
+    setError(null)
+    try {
+      await requestPasswordReset(email)
+      setSent(true)
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -29,6 +37,7 @@ export function ForgotPasswordPage() {
       ) : (
         <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
           <Field label="Work email" htmlFor="reset-email"><input id="reset-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} autoComplete="username" autoFocus /></Field>
+          {error && <InlineError title="Could not send the link" text={error} />}
           <Button type="submit" variant="primary" size="lg" disabled={!email.includes('@')} loading={busy}>Send reset link</Button>
           <p className="m-0 text-xs text-muted">Lost your authenticator app? Ask an admin to reset it.</p>
         </form>

@@ -4,7 +4,7 @@ import { Building2, ChevronRight, Home, Lock, ScanLine, Search, SearchX } from '
 import { Card, EmptyState, InlineError, Skeleton, inputClass } from '@/components/ui'
 import { formatDisplay } from '@/lib/placeId'
 import { useAsync } from '@/lib/useAsync'
-import { publicSearch } from '@/mocks/api'
+import { publicSearch } from '@/lib/api'
 
 export function ViewerHome() {
   const [q, setQ] = useState('')

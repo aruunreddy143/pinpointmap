@@ -1,5 +1,5 @@
-// Mock-phase types. Once the backend exists these are replaced by types generated
-// from its OpenAPI schema (see the api-contract-sync skill).
+// Frontend types (camelCase). The API client in lib/api.ts maps the backend's snake_case responses onto them. Could later be generated
+// from the OpenAPI schema (see the api-contract-sync skill).
 
 export type PlaceType = 'house' | 'building' | 'unit'
 export type PlaceStatus =
@@ -26,7 +26,7 @@ export interface Place {
   label: string | null
   name: string
   geo: LatLon
-  accuracyM: number
+  accuracyM: number | null
   source: LocationSource
   address: string
   landmark: string
@@ -56,7 +56,7 @@ export interface ReviewItem {
   kind: 'new' | 'change' | 'merge'
   submittedBy: string
   ageLabel: string
-  nearestM: number
+  nearestM: number | null
   duplicateSuspect: boolean
   checks: { title: string; detail: string; ok: boolean }[]
 }
@@ -87,3 +87,4 @@ export type Resolution =
   | { kind: 'minimal'; publicId: string }
   | { kind: 'public'; place: Place; units: Place[] }
   | { kind: 'staff'; place: Place; units: Place[] }
+  | { kind: 'tombstone'; publicId: string; status: PlaceStatus; successorIds: string[] }

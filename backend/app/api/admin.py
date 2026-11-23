@@ -7,8 +7,9 @@ from app.core.deps import Actor, get_client, get_notifier, get_session, require_
 from app.core.permissions import Permission
 from app.core.settings import get_settings
 from app.providers.notify import Notifier
+from app.schemas.admin import JurisdictionOut, StaffRowOut
 from app.schemas.auth import CreateInvite, InviteCreated
-from app.services import auth_service
+from app.services import admin_read, auth_service
 from app.services.audit import ClientInfo
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -28,7 +29,7 @@ def create_invite(
     invite, token = auth_service.create_invite(
         session,
         actor_user=actor.user,
-        actor_can_manage=actor.jurisdiction_ids(Permission.USER_MANAGE),
+        actor_can_manage=actor.access.scope(session, Permission.USER_MANAGE),
         actor_is_super_admin=actor.is_super_admin,
         email=body.email,
         role=body.role,
@@ -43,4 +44,20 @@ def create_invite(
         role=invite.role,
         expires_at=invite.expires_at.isoformat(),
         invite_url=None if s.environment == "production" else f"{s.public_base_url}/invite/{token}",
+    )
+
+
+@router.get("/jurisdictions", response_model=list[JurisdictionOut])
+def jurisdictions(
+    actor: Actor = CAN_MANAGE_USERS, session: Session = Depends(get_session)
+) -> list[JurisdictionOut]:
+    """The areas the caller manages (granted areas and everything below them), for the invite form."""
+    return admin_read.list_jurisdictions(session, actor.access)
+
+
+@router.get("/staff", response_model=list[StaffRowOut])
+def staff(actor: Actor = CAN_MANAGE_USERS, session: Session = Depends(get_session)) -> list[StaffRowOut]:
+    """Staff with their role and area, plus invites not yet accepted."""
+    return admin_read.list_staff(
+        session, actor.access, show_invite_tokens=get_settings().environment != "production"
     )

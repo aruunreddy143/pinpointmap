@@ -12,6 +12,7 @@ import hashlib
 import hmac
 import re
 import secrets
+import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -66,6 +67,12 @@ def keyed_hash(purpose: str, value: str) -> str:
 
 def new_token() -> str:
     return secrets.token_urlsafe(32)
+
+
+def invite_token(invite_id: uuid.UUID) -> str:
+    """The link token for an invite, derived from its id and the server key. Only a hash of it is stored,
+    yet the person who created the invite can fetch the link again in development (no email provider)."""
+    return keyed_hash("invite-token", str(invite_id))
 
 
 def new_otp_code() -> str:

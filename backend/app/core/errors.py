@@ -33,6 +33,12 @@ class Conflict(AppError):
     code = "conflict"
 
 
+class DuplicateSuspect(Conflict):
+    """A place already exists within the duplicate-guard radius."""
+
+    code = "duplicate_suspect"
+
+
 class InvalidInput(AppError):
     status_code = 422
     code = "invalid_input"

@@ -377,9 +377,11 @@ def create_invite(
     ).first()
     if pending:
         raise Conflict("That email already has a pending invite.")
-    token = security.new_token()
+    invite_id = uuid.uuid4()
+    token = security.invite_token(invite_id)
     s = get_settings()
     invite = Invite(
+        id=invite_id,
         email=email,
         role=role,
         jurisdiction_id=jurisdiction_id,

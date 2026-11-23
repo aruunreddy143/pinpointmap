@@ -4,21 +4,23 @@ import { Mail, Smartphone } from 'lucide-react'
 import { useSession } from '@/app/providers'
 import { Button, Field, InlineError, inputClass } from '@/components/ui'
 import { identifierHint, maskIdentifier, parseIdentifier, type Identifier } from '@/lib/identifier'
-import { completeSignup, DEMO_OTP, requestCode, verifyCode } from '@/mocks/auth'
-import { CodeInput, DemoHint } from './AuthShell'
+import { completeSignup, requestCode, verifyCode } from '@/lib/authApi'
+import { ApiError } from '@/lib/http'
+import { CodeInput } from './AuthShell'
 
 type Step = 'identify' | 'code' | 'name'
 const RESEND_SECONDS = 30
 
 /** Normal-user sign in AND sign up in one flow: a new mobile/email simply asks for a name after the code. */
 export function UserLoginForm() {
-  const { signIn } = useSession()
+  const { startSession } = useSession()
   const nav = useNavigate()
   const [step, setStep] = useState<Step>('identify')
   const [text, setText] = useState('')
   const [id, setId] = useState<Identifier | null>(null)
   const [code, setCode] = useState('')
   const [name, setName] = useState('')
+  const [signupToken, setSignupToken] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [wait, setWait] = useState(0)
@@ -35,12 +37,14 @@ export function UserLoginForm() {
   const send = async (target: Identifier) => {
     setBusy(true)
     setError(null)
-    const r = await requestCode(target.value)
-    setBusy(false)
-    if (!r.ok) {
-      setError('Too many codes requested. Please wait a few minutes and try again.')
+    try {
+      await requestCode(target.value)
+    } catch (err) {
+      setBusy(false)
+      setError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.')
       return false
     }
+    setBusy(false)
     setId(target)
     setCode('')
     setWait(RESEND_SECONDS)
@@ -58,24 +62,35 @@ export function UserLoginForm() {
     if (!id || code.length !== 6) return
     setBusy(true)
     setError(null)
-    const r = await verifyCode(id.value, code)
-    setBusy(false)
-    if (r.status === 'ok') {
-      signIn('viewer', r.name)
-      nav('/app')
-    } else if (r.status === 'new') setStep('name')
-    else if (r.status === 'wrong') setError(`That code is not right. ${r.triesLeft} ${r.triesLeft === 1 ? 'try' : 'tries'} left.`)
-    else setError('Too many wrong codes. Request a new code to continue.')
+    try {
+      const r = await verifyCode(id.value, code)
+      if (r.status === 'ok') {
+        startSession(r.session)
+        nav('/app')
+      } else {
+        setSignupToken(r.signupToken)
+        setStep('name')
+      }
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   const submitName = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!id || name.trim().length < 2) return
     setBusy(true)
-    const r = await completeSignup(id.value, name)
-    setBusy(false)
-    signIn('viewer', r.name)
-    nav('/app')
+    setError(null)
+    try {
+      startSession(await completeSignup(id.value, signupToken, name))
+      nav('/app')
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   if (step === 'identify') {
@@ -105,7 +120,6 @@ export function UserLoginForm() {
           <CodeInput id="otp" value={code} onChange={(v) => { setCode(v); setError(null) }} invalid={!!error} describedBy="otp-error" />
         </Field>
         <div id="otp-error" aria-live="polite">{error && <InlineError title="Check the code" text={error} />}</div>
-        <DemoHint>the code is {DEMO_OTP}. Try +91 98765 43210 for an existing account, or any other number or email to sign up.</DemoHint>
         <Button type="submit" variant="primary" size="lg" disabled={code.length !== 6} loading={busy}>Verify</Button>
         <div className="flex items-center justify-between text-[13px]">
           <button type="button" className="font-semibold text-accent" onClick={() => { setStep('identify'); setError(null) }}>Use a different {id.kind === 'mobile' ? 'number' : 'email'}</button>
@@ -119,6 +133,7 @@ export function UserLoginForm() {
     <form onSubmit={submitName} className="flex flex-col gap-4" noValidate>
       <p className="m-0 text-[13.5px] leading-relaxed text-muted">Code confirmed. This looks like a new account. Your account is read-only: you can search and view public places.</p>
       <Field label="Your name" htmlFor="name"><input id="name" value={name} onChange={(e) => setName(e.target.value)} className={inputClass} autoComplete="name" autoFocus placeholder="Priya Kumar" /></Field>
+      {error && <InlineError title="Could not create the account" text={error} />}
       <Button type="submit" variant="primary" size="lg" disabled={name.trim().length < 2} loading={busy}>Create account</Button>
     </form>
   )
